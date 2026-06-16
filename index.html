@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日系手帳風．旅遊規劃大師高級擴展版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --color-primary: #FFB19A;       /* 主色：杏桃粉 */
+            --color-secondary: #F5F5DC;     /* 輔助色：燕麥米 */
+            --color-bg: #FCFAF2;            /* 背景：手帳暖白紙張感 */
+            --color-text: #4A3E3D;          /* 文字：日系深焙烤可可 */
+            --color-card-sub: #FFFDF9;      /* 卡片下半部：奶霜白 */
+        }
+
+        body {
+            font-family: 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            background-image: radial-gradient(rgba(255, 177, 154, 0.15) 1px, transparent 0), radial-gradient(rgba(245, 245, 220, 0.2) 1px, transparent 0);
+            background-size: 24px 24px;
+            background-position: 0 0, 12px 12px;
+        }
+
+        .handbook-card {
+            border: 1.5px solid rgba(74, 62, 61, 0.1);
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 4px 14px -4px rgba(74, 62, 61, 0.05);
+            background: white;
+        }
+
+        .theme-bg-primary { background-color: var(--color-primary); }
+        .theme-text-primary { color: var(--color-primary); }
+        .theme-bg-secondary { background-color: var(--color-secondary); }
+        .theme-border-primary { border-color: var(--color-primary); }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 👾 像素藝術專用樣式擴展碼 */
+        .pixel-art {
+            shape-rendering: crispEdges;
+            image-rendering: pixelated;
+        }
+        @keyframes retro-float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+        .animate-retro-float {
+            animation: retro-float 2s ease-in-out infinite;
+        }
+        @keyframes pixel-flash {
+            0%, 100% { filter: drop-shadow(0 0 2px #FFB19A) brightness(1); }
+            50% { filter: drop-shadow(0 0 8px #FFB19A) brightness(1.2); }
+        }
+        .animate-pixel-flash {
+            animation: pixel-flash 1.2s infinite;
+        }
+        .runtime-sticker {
+            transition: transform 0.2s ease-in-out;
+        }
+        .runtime-sticker:hover {
+            transform: scale(1.15) !important;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+        }
+    </style>
+</head>
+<body class="tracking-wide min-h-screen pb-32">
+
+    <header class="max-w-4xl mx-auto p-6 pb-2 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+            <span class="text-xl">🐱</span>
+            <div>
+                <h1 class="text-lg font-black tracking-wider"> TRIP </h1>
+                <p class="text-[9px] opacity-60"> 🐶＆🍙 </p>
+            </div>
+        </div>
+        <nav class="flex space-x-1 text-xs">
+            <button id="btn-dashboard" onclick="switchTab('dashboard')" class="px-3.5 py-2 rounded-xl text-stone-500 font-medium transition-all">🏠 首頁</button>
+            <button id="btn-planner" onclick="switchTab('planner')" class="px-3.5 py-2 rounded-xl text-stone-500 font-medium transition-all">📅 行程</button>
+            <button id="btn-budget" onclick="switchTab('budget')" class="px-3.5 py-2 rounded-xl text-stone-500 font-medium transition-all">💰 預算</button>
+            <button id="btn-toolbox" onclick="switchTab('toolbox')" class="px-3.5 py-2 rounded-xl text-stone-500 font-medium transition-all">🔧 工具箱</button>
+        </nav>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-6 pb-24 relative">
+        
+        <div class="handbook-card p-4 bg-white mb-6 border border-stone-200 shadow-sm relative z-50">
+            <div class="flex justify-between items-center cursor-pointer select-none" onclick="toggleStickerDrawer()">
+                <div class="flex items-center space-x-2">
+                    <span class="text-base">🧸</span>
+                    <h3 class="text-xs font-bold text-stone-700">像素手帳貼紙盒 (Pixel Sticker Drawer)</h3>
+                </div>
+                <i id="sticker-drawer-caret" class="fa-solid fa-chevron-down text-xs text-stone-400"></i>
+            </div>
+            <div id="sticker-drawer-content" class="hidden mt-3 pt-3 border-t border-stone-100">
+                <p class="text-[10px] text-stone-400 mb-3">💡 點擊貼紙即會自動隨機裝飾至當前分頁版面！於畫面上「雙擊貼紙 (Double Click)」可將其撕除清空。</p>
+                
+                <div class="space-y-4" id="sticker-categories-container">
+                    <div>
+                        <h4 class="text-[10px] font-bold text-orange-400 mb-1.5 flex items-center gap-1">💾 復古科技與媒體 [Retro Media & Tech]</h4>
+                        <div id="palette-media" class="grid grid-cols-4 sm:grid-cols-6 gap-2"></div>
+                    </div>
+                    <div>
+                        <h4 class="text-[10px] font-bold text-pink-400 mb-1.5 flex items-center gap-1">🍮 甜蜜點心盛宴 [Desserts & Sweets]</h4>
+                        <div id="palette-desserts" class="grid grid-cols-4 sm:grid-cols-6 gap-2"></div>
+                    </div>
+                    <div>
+                        <h4 class="text-[10px] font-bold text-emerald-400 mb-1.5 flex items-center gap-1">🍔 療癒美食地圖 [Cafe & Fast Food]</h4>
+                        <div id="palette-cafe" class="grid grid-cols-4 sm:grid-cols-6 gap-2"></div>
+                    </div>
+                    <div>
+                        <h4 class="text-[10px] font-bold text-purple-400 mb-1.5 flex items-center gap-1">🦈 幻想流行文化 [Pop Culture & Fantasy]</h4>
+                        <div id="palette-pop" class="grid grid-cols-4 sm:grid-cols-6 gap-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section id="page-dashboard" class="space-y-6 relative min-h-[400px]">
+            <div class="border-l-4 theme-border-primary pl-3 py-0.5">
+                <h1 class="text-lg font-bold">我的旅程</h1>
+                <p class="text-[11px] text-stone-400">點擊卡片進入詳細行程規劃，右上角可編輯或刪除卡片</p>
+            </div>
+            <div id="trip-list" class="grid grid-cols-1 sm:grid-cols-2 gap-6"></div>
+            
+            <button onclick="openTripModal()" class="w-full border border-dashed border-stone-300 hover:theme-border-primary text-stone-500 hover:theme-text-primary rounded-2xl p-4 flex items-center justify-center space-x-2 bg-white transition-all shadow-sm text-xs">
+                <i class="fa-solid fa-plus"></i>
+                <span class="font-medium">建立新旅程規劃</span>
+            </button>
+        </section>
+
+        <section id="page-planner" class="hidden space-y-6 relative min-h-[400px]">
+            <div class="flex justify-between items-center border-b border-stone-200 pb-4">
+                <div class="border-l-4 theme-border-primary pl-3">
+                    <h1 id="planner-title" class="text-base font-bold">未命名旅程</h1>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="openManageDayModal('add')" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs px-3 py-2 rounded-xl flex items-center space-x-1 font-medium transition-colors">
+                        <i class="fa-solid fa-calendar-plus text-[10px]"></i> <span>插入新天數</span>
+                    </button>
+                    <button onclick="openManageDayModal('edit')" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs px-3 py-2 rounded-xl flex items-center space-x-1 font-medium transition-colors">
+                        <i class="fa-solid fa-calendar-day text-[10px]"></i> <span>改日期</span>
+                    </button>
+                    <button onclick="openActivityModal()" class="theme-bg-primary hover:opacity-90 text-stone-800 text-xs px-4 py-2 rounded-xl shadow-sm flex items-center space-x-1 font-semibold">
+                        <i class="fa-solid fa-plus text-[10px]"></i> <span>新增行程</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div id="day-selector" class="flex md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar"></div>
+                
+                <div class="md:col-span-3 space-y-4 bg-white p-5 rounded-2xl shadow-sm border border-stone-100 relative flex flex-col justify-between min-h-[400px]">
+                    <div>
+                        <div class="absolute top-4 right-4 text-4xl select-none pointer-events-none transform rotate-12 opacity-80 z-10">🐱🍜</div>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                            <div id="taiwan-weather-billboard" class="sm:col-span-2 bg-emerald-50/80 border border-emerald-200/60 rounded-xl p-3 flex justify-between items-center text-xs text-emerald-900 font-medium">
+                                <span class="flex items-center space-x-2.5">
+                                    <span class="inline-block animate-retro-float">
+                                        <svg class="pixel-art" width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <rect x="6" y="2" width="4" height="4" fill="#F59E0B"/>
+                                            <rect x="8" y="1" width="2" height="1" fill="#EF4444"/>
+                                            <rect x="2" y="7" width="11" height="6" fill="#CBD5E1"/>
+                                            <rect x="4" y="5" width="7" height="3" fill="#E2E8F0"/>
+                                            <rect x="1" y="9" width="3" height="2" fill="#94A3B8"/>
+                                        </svg>
+                                    </span>
+                                    <span id="tw-weather-string">正在獲取台灣當前氣象動態數據...</span>
+                                </span>
+                                <span class="text-[9px] bg-emerald-600/10 text-emerald-700 px-2 py-0.5 rounded-full font-mono">LIVE</span>
+                            </div>
+                            
+                            <div class="bg-amber-50/80 border border-amber-200/60 rounded-xl p-2.5 flex flex-col justify-center space-y-1">
+                                <span class="text-[10px] font-bold text-amber-900 block">今日心情 (Mood Log)</span>
+                                <div id="mood-selector-container" class="grid grid-cols-2 gap-1"></div>
+                            </div>
+                        </div>
+
+                        <div id="timeline-container" class="relative border-l-2 border-stone-200/60 ml-3 pl-5 space-y-4 pt-2"></div>
+                    </div>
+
+                    <div class="mt-8 pt-4 border-t border-stone-100 flex justify-between items-center text-xs">
+                        <button onclick="deleteCurrentDayShortcut()" class="text-stone-400 hover:text-red-500 flex items-center space-x-1.5 transition-colors py-1 px-2 hover:bg-red-50 rounded-lg">
+                            <i class="fa-solid fa-calendar-xmark text-[11px]"></i>
+                            <span>刪除當前選定天數 (快捷鍵)</span>
+                        </button>
+                        <span id="day-counter-footer" class="text-[10px] text-stone-400 font-mono"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-budget" class="hidden space-y-6 relative min-h-[400px]">
+            <div class="border-l-4 theme-border-primary pl-3 py-0.5">
+                <h1 class="text-lg font-bold">預算控制與分類統計</h1>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center text-xs">
+                <div class="bg-white p-4 rounded-xl border border-stone-100 shadow-sm flex flex-col justify-between">
+                    <p class="text-stone-400 mb-1">💰 設定總預算額度 (可修改)</p>
+                    <div class="relative mt-1">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 font-bold">$</span>
+                        <input type="number" id="budget-total-input" oninput="handleTotalBudgetChange(this)" min="0" placeholder="0" class="w-full pl-7 pr-3 py-1.5 text-center font-bold text-base border border-stone-200 focus:border-stone-400 rounded-xl outline-none transition-all">
+                    </div>
+                </div>
+                
+                <div class="bg-white p-4 rounded-xl border border-stone-100 shadow-sm flex flex-col justify-between">
+                    <p class="text-stone-400">📊 已規劃花費總計</p>
+                    <p id="budget-spent" class="font-bold text-lg mt-2 text-stone-700">$0</p>
+                </div>
+                
+                <div id="budget-remain-card" class="bg-white p-4 rounded-xl border border-stone-100 shadow-sm flex flex-col justify-between transition-colors duration-300">
+                    <p id="budget-remain-label" class="text-stone-400">☕ 可用剩餘款</p>
+                    <p id="budget-remain" class="font-bold text-lg mt-2">$0</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border border-stone-100 shadow-sm space-y-2">
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-stone-500 font-medium">💼 當前預算佔用率 (Utilization)</span>
+                    <span id="budget-percent-text" class="font-mono font-bold text-stone-700">0%</span>
+                </div>
+                <div class="w-full bg-stone-100 h-2.5 rounded-full overflow-hidden">
+                    <div id="budget-percent-bar" class="h-full bg-stone-400 transition-all duration-500 rounded-full" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <div class="handbook-card p-4 bg-white space-y-3">
+                <h3 class="font-bold text-xs border-b border-stone-100 pb-2">➕ 快速追加預算支出項目 (記帳)</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
+                    <input type="text" id="budget-item-name" placeholder="項目名稱 (如: 買藥妝、吃烤肉)" class="border border-stone-200 rounded-xl px-3 py-2.5 outline-none focus:border-stone-400 transition-all">
+                    <input type="number" id="budget-item-cost" min="0" placeholder="花費金額 (TWD)" class="border border-stone-200 rounded-xl px-3 py-2.5 outline-none focus:border-stone-400 transition-all">
+                    <select id="budget-item-category" class="border border-stone-200 rounded-xl px-3 py-2.5 outline-none bg-white cursor-pointer">
+                        <option value="Food">🍡 美食餐飲 (Food)</option>
+                        <option value="Transport">🚇 交通運輸 (Transport)</option>
+                        <option value="Accommodation">🏨 飯店住宿 (Accommodation)</option>
+                        <option value="Shopping">🛍️ 購物藥妝 (Shopping)</option>
+                        <option value="Others">🎈 其他支出 (Others)</option>
+                    </select>
+                    <button onclick="addCustomBudgetItem()" class="text-white font-bold rounded-xl py-2.5 transition-opacity hover:opacity-90 shadow-sm" style="background-color: var(--color-text);">加入統計</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center bg-white p-6 rounded-2xl shadow-sm border border-stone-100">
+                <div class="w-full max-w-[180px] mx-auto"><canvas id="budgetChart"></canvas></div>
+                <div id="budget-categories" class="space-y-2.5 text-xs"></div>
+            </div>
+            
+            <div class="bg-white p-4 rounded-2xl border border-stone-100 shadow-sm space-y-2">
+                <h4 class="text-xs font-bold text-stone-400">📜 獨立記帳項目明細 (可點擊刪除)</h4>
+                <div id="custom-expenses-list" class="max-h-40 overflow-y-auto space-y-1.5 pr-1 text-xs"></div>
+            </div>
+        </section>
+
+        <section id="page-toolbox" class="hidden space-y-6 relative min-h-[400px]">
+            <div class="border-l-4 theme-border-primary pl-3 py-0.5">
+                <h1 class="text-lg font-bold">手帳工具箱 ＆ 備忘檢查</h1>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="handbook-card p-4 text-center">
+                    <p class="text-[10px] text-stone-400">👦🛒 待購買 / 待辦</p>
+                    <p id="dashboard-todo" class="text-xl font-black text-stone-700 mt-1">0</p>
+                </div>
+                <div class="handbook-card p-4 text-center">
+                    <p class="text-[10px] text-stone-400">👩🛍️ 已完成</p>
+                    <p id="dashboard-done" class="text-xl font-black text-stone-700 mt-1">0</p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div class="flex space-x-2">
+                    <input type="text" id="new-item-input" placeholder="新增想買的物品或打包檢查清單..." class="flex-1 text-xs border border-stone-200 rounded-xl px-4 py-2.5 outline-none bg-white focus:border-stone-400">
+                    <button onclick="addChecklistItem()" class="text-white text-xs px-5 py-2.5 rounded-xl font-bold" style="background-color: var(--color-text);">新增</button>
+                </div>
+                <div id="checklist-container" class="space-y-2"></div>
+            </div>
+
+            <div class="handbook-card p-4 mt-6">
+                <h3 class="font-bold text-sm mb-4">💵 台幣 ⇄ 港幣 快速換算</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[9px] text-stone-400 mb-1 block">新台幣 (TWD)</label>
+                        <input type="number" id="input-twd" oninput="convertCurrency('twd')" placeholder="TWD" class="w-full border border-stone-200 rounded-2xl px-4 py-3 text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[9px] text-stone-400 mb-1 block">港幣 (HKD)</label>
+                        <input type="number" id="input-hkd" oninput="convertCurrency('hkd')" placeholder="HKD" class="w-full border border-stone-200 rounded-2xl px-4 py-3 text-sm outline-none">
+                    </div>
+                </div>
+                <p id="rate-display" class="text-[9px] text-stone-400 mt-3 text-center">載入即時匯率中...</p>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-stone-100 shadow-sm mt-6">
+                <h3 class="font-bold text-xs border-b border-stone-100 pb-2 mb-3 text-stone-700 flex items-center space-x-1.5">
+                    <span>👾</span> <span>復古成就看板 (Retro Achievements)</span>
+                </h3>
+                <div id="achievements-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-50">
+        <div class="bg-white/90 backdrop-blur-md border-2 border-stone-700/80 rounded-full py-2.5 px-4 flex justify-between items-center shadow-xl">
+            <button onclick="switchTab('dashboard')" id="dock-dashboard" class="flex flex-col items-center space-y-0.5 flex-1 transition-all">
+                <div class="w-9 h-6 rounded-full flex items-center justify-center text-sm transition-colors" id="icon-bg-dashboard"><i class="fa-solid fa-ticket"></i></div>
+                <span class="text-[9px] font-black" id="text-dock-dashboard">首頁</span>
+            </button>
+            <button onclick="switchTab('planner')" id="dock-planner" class="flex flex-col items-center space-y-0.5 flex-1 transition-all">
+                <div class="w-9 h-6 rounded-full flex items-center justify-center text-sm transition-colors" id="icon-bg-planner"><i class="fa-regular fa-calendar-days"></i></div>
+                <span class="text-[9px] font-black" id="text-dock-planner">行程</span>
+            </button>
+            <button onclick="switchTab('budget')" id="dock-budget" class="flex flex-col items-center space-y-0.5 flex-1 transition-all">
+                <div class="w-9 h-6 rounded-full flex items-center justify-center text-sm transition-colors" id="icon-bg-wallet"><i class="fa-solid fa-wallet"></i></div>
+                <span class="text-[9px] font-black" id="text-dock-budget">預算</span>
+            </button>
+            <button onclick="switchTab('toolbox')" id="dock-toolbox" class="flex flex-col items-center space-y-0.5 flex-1 transition-all">
+                <div class="w-9 h-6 rounded-full flex items-center justify-center text-sm transition-colors" id="icon-bg-toolbox"><i class="fa-solid fa-bag-shopping"></i></div>
+                <span class="text-[9px] font-black" id="text-dock-toolbox">工具箱</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="trip-modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white border-2 border-stone-700 rounded-3xl p-5 w-full max-w-xs space-y-3 text-xs shadow-2xl">
+            <h3 class="font-black text-sm">建立新旅程 ✨</h3>
+            <div>
+                <label class="block text-stone-400 mb-1">目的地名稱</label>
+                <input type="text" id="modal-trip-title" placeholder="例如：台北 ➔ 東京" class="w-full border border-stone-200 rounded-xl p-2 outline-none">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-stone-400 mb-1">出發城市代碼</label>
+                    <input type="text" id="modal-trip-from" value="TPE" class="w-full border border-stone-200 rounded-xl p-1.5 outline-none">
+                </div>
+                <div>
+                    <label class="block text-stone-400 mb-1">抵達城市代碼</label>
+                    <input type="text" id="modal-trip-to" value="NRT" class="w-full border border-stone-200 rounded-xl p-1.5 outline-none">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-stone-400 mb-1">出發時間</label>
+                    <input type="time" id="modal-trip-deptime" value="08:20" class="w-full border border-stone-200 rounded-xl p-1.5 outline-none">
+                </div>
+                <div>
+                    <label class="block text-stone-400 mb-1">抵達時間</label>
+                    <input type="time" id="modal-trip-arrtime" value="12:45" class="w-full border border-stone-200 rounded-xl p-1.5 outline-none">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-stone-400 mb-1">出發日期</label>
+                    <input type="date" id="modal-trip-start" value="2026-06-16" class="w-full border border-stone-200 rounded-xl p-1.5 outline-none">
+                </div>
+                <div>
+                    <label class="block text-stone-400 mb-1">航班代號</label>
+                    <input type="text" id="modal-trip-flight" value="JX800" class="w-full border border-stone-200 rounded-xl p-1.5 outline-none">
+                </div>
+            </div>
+            <div class="flex space-x-2 pt-2">
+                <button onclick="closeModal('trip-modal')" class="flex-1 bg-stone-100 py-2 rounded-xl font-bold">取消</button>
+                <button onclick="saveNewTrip()" class="flex-1 text-white py-2 rounded-xl font-bold" style="background-color: var(--color-text);">建立</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="day-manage-modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white border-2 border-stone-700 rounded-3xl p-5 w-full max-w-xs space-y-3 text-xs shadow-2xl">
+            <h3 id="day-manage-title" class="font-black text-sm">管理行程天數</h3>
+            <input type="hidden" id="day-manage-mode" value="add">
+            <div>
+                <label id="day-manage-label" class="block text-stone-400 mb-1">設定該天日期</label>
+                <input type="date" id="day-manage-date" class="w-full border border-stone-200 rounded-xl p-2 outline-none">
+            </div>
+            <div class="flex space-x-2 pt-2">
+                <button onclick="closeModal('day-manage-modal')" class="flex-1 bg-stone-100 py-2 rounded-xl">取消</button>
+                <button onclick="executeDayManagement()" class="flex-1 text-white py-2 rounded-xl font-bold" style="background-color: var(--color-text);">儲存變更</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="activity-modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white border-2 border-stone-700 rounded-3xl p-5 w-full max-w-xs space-y-3 text-xs shadow-2xl">
+            <h3 id="activity-modal-title" class="font-black text-sm">新增行程項目 🕒</h3>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-stone-400 mb-1">時間</label>
+                    <input type="time" id="act-time" value="12:00" class="w-full border border-stone-200 rounded-xl p-2">
+                </div>
+                <div>
+                    <label class="block text-stone-400 mb-1">花費額 (TWD)</label>
+                    <input type="number" id="act-cost" value="0" class="w-full border border-stone-200 rounded-xl p-2">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-stone-400 mb-1">活動日期</label>
+                    <input type="date" id="act-date" class="w-full border border-stone-200 rounded-xl p-1.5 outline-none" readonly disabled>
+                </div>
+                <div>
+                    <label class="block text-stone-400 mb-1">預計時長(小時)</label>
+                    <input type="number" id="act-duration" value="1" min="1" class="w-full border border-stone-200 rounded-xl p-1.5 outline-none">
+                </div>
+            </div>
+            <div>
+                <label class="block text-stone-400 mb-1">支出預算分類</label>
+                <select id="act-category" class="w-full border border-stone-200 rounded-xl p-2 bg-white">
+                    <option value="Food">🍡 美食餐飲</option>
+                    <option value="Transport">🚇 交通運輸</option>
+                    <option value="Accommodation">🏨 飯店住宿</option>
+                    <option value="Shopping">🛍️ 購物藥妝</option>
+                    <option value="Others" selected>🎈 其他支出</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-stone-400 mb-1">地點 / 事件描述</label>
+                <input type="text" id="act-location" placeholder="例如：西門町商圈" class="w-full border border-stone-200 rounded-xl p-2.5">
+            </div>
+            <div class="flex space-x-2 pt-2">
+                <button onclick="closeModal('activity-modal')" class="flex-1 bg-stone-100 py-2 rounded-xl">取消</button>
+                <button onclick="saveActivityLogic()" class="flex-1 text-white py-2 rounded-xl font-bold" style="background-color: var(--color-text);">儲存確認</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Core Data Engine ---
+        let appData = {
+            trips: [
+                {
+                    id: "trip-1",
+                    title: "台北 ➔ 東京",
+                    startDate: "2026-06-16",
+                    arrDate: "2026-06-16",
+                    flight: "JX800",
+                    fromCode: "TPE", toCode: "NRT",
+                    depTime: "08:20", arrTime: "12:45",
+                    dailyItinerary: [
+                        { day: 1, date: "2026-06-16", activities: [
+                            { time: "12:45", location: "東京成田機場 抵達點名", cost: 2300, duration: "1", category: "Transport", date: "2026-06-16" },
+                            { time: "18:30", location: "居酒屋品嚐地道拉麵", cost: 650, duration: "2", category: "Food", date: "2026-06-16" }
+                        ], mood: "hyped" },
+                        { day: 2, date: "2026-06-17", activities: [
+                            { time: "10:00", location: "淺草寺雷門散策", cost: 420, duration: "3", category: "Others", date: "2026-06-17" }
+                        ], mood: "exhausted" }
+                    ],
+                    budget: { total: 40000, spent: 3370 },
+                    customBudgetExpenses: [
+                        { name: "預購東京地鐵三日券", cost: 350, category: "Transport" }
+                    ],
+                    checklist: [
+                        { id: 1, text: "購買藥妝", done: false },
+                        { id: 2, text: "準備護照", done: true }
+                    ]
+                }
+            ],
+            placedStickers: [],
+            unlockedAchievements: []
+        };
+
+        let activeTripId = "trip-1";
+        let activeDayIdx = 0;
+        let budgetChartInstance = null;
+        let exchangeRate = 0.25; 
+        let activeTab = 'dashboard';
+
+        // 🎨 完整渲染之高度精密 8-bit 精美向量資產字典
+        const PIXEL_SVG_ASSETS = {
+            // [Retro Media & Tech]
+            floppy: `<svg class="pixel-art w-8 h-8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="14" height="14" fill="#3B82F6"/><rect x="3" y="1" width="10" height="5" fill="#1E3A8A"/><rect x="4" y="2" width="4" height="3" fill="#FFFFFF"/><rect x="3" y="9" width="10" height="6" fill="#FFFFFF"/><rect x="5" y="10" width="6" height="4" fill="#93C5FD"/><rect x="12" y="3" width="1" height="2" fill="#EF4444"/></svg>`,
+            cassette: `<svg class="pixel-art w-8 h-8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="2" width="14" height="11" fill="#4B5563" rx="1"/><rect x="2" y="3" width="12" height="7" fill="#1F2937"/><rect x="3" y="4" width="10" height="4" fill="#F3F4F6"/><circle cx="5.5" cy="6" r="1.5" fill="#4B5563"/><circle cx="10.5" cy="6" r="1.5" fill="#4B5563"/><rect x="4" y="11" width="8" height="2" fill="#374151"/></svg>`,
+            cd: `<svg class="pixel-art w-8 h-8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="7" fill="#D1D5DB"/><circle cx="8" cy="8" r="5" fill="#E5E7EB"/><path d="M 8 3 A 5 5 0 0 1 13 8" stroke="#F472B6" stroke-width="1.5" fill="none"/><path d="M 3 8 A 5 5 0 0 1 8 13" stroke="#60A5FA" stroke-width="1.5" fill="none"/><circle cx="8" cy="8" r="2" fill="#9CA3AF"/><circle cx="8" cy="8" r="1" fill="#FFFFFF"/></svg>`,
+            sdcard: `<svg class="pixel-art w-8 h-8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 1 L12 1 L15 4 L15 15 L3 15 Z" fill="#111827"/><rect x="5" y="3" width="1" height="3" fill="#F59E0B"/><rect x="7" y="3" width="1" height="3" fill="#F59E0B"/><rect x="9" y="3" width="1" height="3" fill="#F59E0B"/><rect x="11" y="3" width="1" height="3" fill="#F59E0B"/><rect x="5" y="8" width="7" height="5" fill="#374151"/></svg>`,
+
+            // [Desserts & Sweets]
+            parfait: `<svg class="pixel-art w-8 h-8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="7" y="1" width="2" height="2" fill="#EF4444"/><rect x="4" y="3" width="8" height="5" fill="#F472B6"/><rect x="5" y="4" width="6" height="5" fill="#FFF5F5"/><rect x="6" y="5" width="4" height="2" fill="#F472B6"/><path d="M3 3 L13 3 L10 12 L8 12 L8 14 L11 14 L11 15 L5 15 L5 14 L8 14 L8 12 L6 12 Z" fill="#E5E7EB" opacity="0.6"/></svg>`,
+            pudding: `<svg class="pixel-art w-8 h-8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 4 L12 4 L11 2 L5 2 Z" fill="#78350F"/><path d="M3 5 L13 5 L14 11 L2 11 Z" fill="#FBBF24"/><rect x="5" y="7" width="6" height="2" fill="#F59E0B"/><rect x="1" y="11" width="14" height="2" fill="#E5E7EB"/></svg>`,
+            donut: `<svg class="pixel-art w-8 h-8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="6" fill="#F43F5E"/><circle cx="8" cy="8" r="5" fill="#ED3833"/><circle cx="8" cy="8" r="2" fill="#FCFAF2"/><rect x="5" y="4" width="1" height="1" fill="#FCD34D"/><rect x="10" y="5" width="1" height="2" fill="#60A5FA"/><rect x="9" y="10" width="2" height="1" fill="#34D399"/></svg>`,
+            rollcake: `<svg class="pixel-art w-8 h-8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="4" width="12" height="8" fill="#FDE68A" rx="2"/><circle cx="6" cy="8" r="3" fill="#FFFFFF"/><circle cx="6" cy="8" r="1.5" fill="#B45309"/><rect x="9" y="5" width="4" height="6" fill="#F59E0B" opacity="0.4"/></svg>`,
+
+            // [Cafe & Fast Food]
+            bubbletea: `<svg class="pixel-art w-8 h-8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="11" y="1" width="1" height="4" fill="#EF4444"/><rect x="4" y="4" width="8" height="10" fill="#F59E0B" rx="1"/><rect x="3" y="3" width="10" height="2" fill="#D1D5DB"/><circle cx="6" cy="11" r="1" fill="#000000"/><circle cx="9" cy="12" r="1" fill="#000000"/><circle cx="7" cy="9" r="1" fill="#000000"/><circle cx="10" cy="8" r="1" fill="#000000"/></svg>`,
+            burger: `<svg class="pixel-art w-8 h-8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 6 Q 8 1 14 6 Z" fill="#D97706"/><rect x="2" y="7" width="12" height="1.5" fill="#10B981"/><rect x="3" y="8.5" width="10" height="2" fill="#EF4444"/><rect x="2" y="10.5" width="12" height="2" fill="#B45309"/><path d="M2 12.5 L14 12.5 L13 15 L3 15 Z" fill="#D97706"/></svg>`,
+            pizza: `<svg class="pixel-art w-8 h-8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1 L15 1 L8 15 Z" fill="#FBBF24"/><path d="M1 1 L15 1 L14 3 L2 3 Z" fill="#B45309"/><circle cx="5" cy="4" r="1" fill="#DC2626"/><circle cx="9" cy="7" r="1" fill="#DC2626"/><circle cx="7" cy="10" r="1" fill="#DC2626"/></svg>`,
+            sushi: `<svg class="pixel-art w-8 h-8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="7" width="10" height="6" fill="#FFFFFF" rx="2"/><rect x="2" y="4" width="12" height="4" fill="#EF4444" rx="1"/><rect x="5" y="3" width="4" height="1" fill="#FFFFFF" opacity="0.6"/><rect x="4" y="10" width="8" height="3" fill="#111827"/></svg>`,
+
+            // [Pop Culture & Fantasy]
+            princess: `<svg class="pixel-art w-8 h-8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="2" width="8" height="2" fill="#FCD34D"/><rect x="2" y="4" width="12" height="8" fill="#F472B6"/><circle cx="5.5" cy="7" r="1" fill="#2563EB"/><circle cx="10.5" cy="7" r="1" fill="#2563EB"/><rect x="6" y="10" width="4" height="1" fill="#DC2626"/></svg>`,
+            mysterybox: `<svg class="pixel-art w-8 h-8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="14" height="14" fill="#F59E0B" rx="1"/><rect x="3" y="3" width="10" height="1" fill="#FEF3C7"/><rect x="3" y="3" width="1" height="10" fill="#FEF3C7"/><path d="M6 5 H10 V7 H8 V9 H6" stroke="#FFFFFF" stroke-width="1.5" fill="none"/><rect x="7" y="11" width="2" height="1.5" fill="#FFFFFF"/></svg>`,
+            shark: `<svg class="pixel-art w-8 h-8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 8 Q 5 2 13 4 L15 2 L14 7 L15 10 L12 9 Q 7 14 1 8 Z" fill="#60A5FA"/><path d="M4 8 Q 8 11 12 9 Z" fill="#FFFFFF"/><circle cx="5" cy="5" r="0.8" fill="#000000"/><path d="M7 8 L8 7 L9 8" stroke="#111827" fill="none"/></svg>`,
+
+            // 鎖定成就勳章
+            badge_tycoon: `<svg class="pixel-art w-8 h-8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="14" height="14" fill="#F59E0B" rx="1"/><rect x="4" y="4" width="8" height="8" fill="#FFFDF9"/><rect x="7" y="5" width="2" height="6" fill="#10B981"/></svg>`,
+            badge_unstoppable: `<svg class="pixel-art w-8 h-8" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="14" height="14" fill="#EC4899" rx="1"/><rect x="3" y="3" width="10" height="10" fill="#3B82F6"/><rect x="5" y="5" width="6" height="6" fill="#FCD34D"/></svg>`
+        };
+
+        const MOOD_AVATARS = {
+            exhausted: {
+                name: '疲憊野獸',
+                svg: `<svg class="pixel-art w-5 h-5" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="12" height="12" fill="#94A3B8"/><rect x="4" y="6" width="2" height="2" fill="#000"/><rect x="10" y="6" width="2" height="2" fill="#000"/><rect x="5" y="10" width="6" height="1" fill="#000"/></svg>`
+            },
+            hyped: {
+                name: '亢奮公主',
+                svg: `<svg class="pixel-art w-5 h-5" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="12" height="12" fill="#F472B6"/><rect x="4" y="5" width="2" height="2" fill="#2563EB"/><rect x="10" y="5" width="2" height="2" fill="#2563EB"/><rect x="6" y="9" width="4" height="3" fill="#DC2626"/></svg>`
+            }
+        };
+
+        window.onload = function() {
+            if(localStorage.getItem('handbook_trip_data')) {
+                appData = JSON.parse(localStorage.getItem('handbook_trip_data'));
+            }
+            if(!appData.trips || appData.trips.length === 0) {
+                appData.trips = [{
+                    id: "trip-1", title: "台北 ➔ 東京", startDate: "2026-06-16", arrDate: "2026-06-16", flight: "JX800",
+                    fromCode: "TPE", toCode: "NRT", depTime: "08:20", arrTime: "12:45",
+                    dailyItinerary: [{ day: 1, date: "2026-06-16", activities: [], mood: "hyped" }],
+                    budget: { total: 40000, spent: 0 }, customBudgetExpenses: [], checklist: []
+                }];
+            }
+            if(!appData.placedStickers) appData.placedStickers = [];
+            if(!appData.unlockedAchievements) appData.unlockedAchievements = [];
+
+            activeTripId = appData.trips[0].id;
+            
+            fetchExchangeRate();
+            fetchTaiwanWeatherData();
+            renderDashboard();
+            renderChecklist();
+            updateBudgetCalculations();
+            
+            initPixelModules();
+            switchTab('dashboard');
+        };
+
+        // --- Currency API ---
+        async function fetchExchangeRate() {
+            try {
+                const res = await fetch('https://api.exchangerate-api.com/v4/latest/TWD');
+                const data = await res.json();
+                exchangeRate = data.rates.HKD;
+                document.getElementById('rate-display').innerText = `即時匯率: 1 TWD ≈ ${exchangeRate.toFixed(4)} HKD`;
+            } catch(e) {
+                console.error("Failed to fetch rates", e);
+                document.getElementById('rate-display').innerText = "匯率伺服器連線失敗，使用預設值";
+            }
+        }
+
+        function convertCurrency(type) {
+            const twdInput = document.getElementById('input-twd');
+            const hkdInput = document.getElementById('input-hkd');
+            if(type === 'twd') {
+                hkdInput.value = (parseFloat(twdInput.value) * exchangeRate).toFixed(2);
+            } else {
+                twdInput.value = (parseFloat(hkdInput.value) / exchangeRate).toFixed(2);
+            }
+        }
+
+        // --- Checklist Logic ---
+        function renderChecklist() {
+            const trip = appData.trips.find(t => t.id === activeTripId);
+            const container = document.getElementById('checklist-container');
+            const todoEl = document.getElementById('dashboard-todo');
+            const doneEl = document.getElementById('dashboard-done');
+            
+            if(!trip || !trip.checklist) return;
+            
+            container.innerHTML = "";
+            let todoCount = 0;
+            let doneCount = 0;
+
+            trip.checklist.forEach(item => {
+                if(item.done) doneCount++; else todoCount++;
+                
+                const div = document.createElement('div');
+                div.className = "flex items-center space-x-2 p-3 bg-white rounded-xl border border-stone-100 shadow-sm";
+                div.innerHTML = `
+                    <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleChecklistItem(${item.id})" class="accent-[var(--color-primary)] w-4 h-4 rounded cursor-pointer">
+                    <span class="flex-1 text-xs ${item.done ? 'line-through text-stone-300' : 'text-stone-700 font-bold'}">${item.text}</span>
+                    <button onclick="deleteChecklistItem(${item.id})" class="text-stone-300 hover:text-red-500"><i class="fa-solid fa-trash-can text-[10px]"></i></button>
+                `;
+                container.appendChild(div);
+            });
+
+            todoEl.innerText = todoCount;
+            doneEl.innerText = doneCount;
+            
+            checkAchievements();
+        }
+
+        function addChecklistItem() {
+            const input = document.getElementById('new-item-input');
+            const text = input.value.trim();
+            if(!text) return;
+            const trip = appData.trips.find(t => t.id === activeTripId);
+            if(!trip.checklist) trip.checklist = [];
+            
+            trip.checklist.push({ id: Date.now(), text: text, done: false });
+            input.value = "";
+            renderChecklist();
+            saveToStorage();
+        }
+
+        function toggleChecklistItem(id) {
+            const trip = appData.trips.find(t => t.id === activeTripId);
+            const item = trip.checklist.find(i => i.id === id);
+            if(item) {
+                item.done = !item.done;
+                renderChecklist();
+                saveToStorage();
+            }
+        }
+
+        function deleteChecklistItem(id) {
+            const trip = appData.trips.find(t => t.id === activeTripId);
+            trip.checklist = trip.checklist.filter(i => i.id !== id);
+            renderChecklist();
+            saveToStorage();
+        }
+
+        // --- Action Controllers ---
+        function editTripTitle(event, tripId) {
+            event.stopPropagation();
+            const trip = appData.trips.find(t => t.id === tripId);
+            if(!trip) return;
+            const newTitle = prompt("請輸入新的旅程名稱 ✏️：", trip.title);
+            if(newTitle !== null && newTitle.trim() !== "") {
+                trip.title = newTitle.trim();
+                saveToStorage();
+                renderDashboard();
+            }
+        }
+
+        function deleteTrip(event, tripId) {
+            event.stopPropagation();
+            const trip = appData.trips.find(t => t.id === tripId);
+            if(!trip) return;
+            if(confirm(`確定要刪除旅程「${trip.title}」嗎？此操作將清除所有該旅程的行程與預算，且無法還原 ❌。`)) {
+                appData.trips = appData.trips.filter(t => t.id !== tripId);
+                if (activeTripId === tripId) {
+                    activeTripId = appData.trips.length > 0 ? appData.trips[0].id : null;
+                }
+                saveToStorage();
+                renderDashboard();
+            }
+        }
+
+        function updateTripDateTime(event, tripId, type) {
+            event.stopPropagation();
+            const trip = appData.trips.find(t => t.id === tripId);
+            if (!trip) return;
+            const newVal = event.target.value; 
+            if (!newVal) return;
+            
+            const [datePart, timePart] = newVal.split('T');
+
+            if (type === 'dep') {
+                trip.startDate = datePart;
+                trip.depTime = timePart;
+            } else if (type === 'arr') {
+                trip.arrDate = datePart;
+                trip.arrTime = timePart;
+            }
+            saveToStorage();
+            renderDashboard();
+        }
+
+        function saveToStorage() { localStorage.setItem('handbook_trip_data', JSON.stringify(appData)); }
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function openTripModal() { document.getElementById('modal-trip-start').value = new Date().toISOString().split('T')[0]; openModal('trip-modal'); }
+        
+        function switchTab(tabName) {
+            activeTab = tabName;
+            const tabs = ['dashboard', 'planner', 'budget', 'toolbox'];
+            tabs.forEach(t => {
+                document.getElementById(`page-${t}`).classList.add('hidden');
+                const topBtn = document.getElementById(`btn-${t}`);
+                if(topBtn) {
+                    topBtn.style.backgroundColor = "transparent";
+                    topBtn.style.color = "";
+                }
+            });
+            document.getElementById(`page-${tabName}`).classList.remove('hidden');
+            const activeTopBtn = document.getElementById(`btn-${tabName}`);
+            if(activeTopBtn) {
+                activeTopBtn.style.backgroundColor = "var(--color-text)";
+                activeTopBtn.style.color = "white";
+            }
+            if(tabName === 'planner') {
+                renderPlanner();
+                renderMoodSelector();
+            }
+            if(tabName === 'budget') {
+                renderBudgetPage();
+            }
+            
+            renderPlacedStickers();
+        }
+
+        function renderDashboard() {
+            const container = document.getElementById('trip-list');
+            container.innerHTML = "";
+            appData.trips.forEach(trip => {
+                const card = document.createElement('div');
+                card.className = "handbook-card flex flex-col cursor-pointer transition-all active:scale-98 relative group";
+                card.onclick = () => { activeTripId = trip.id; activeDayIdx = 0; switchTab('planner'); };
+                
+                const depDateTime = `${trip.startDate || ''}T${trip.depTime || '00:00'}`;
+                const arrDateTime = `${trip.arrDate || trip.startDate || ''}T${trip.arrTime || '00:00'}`;
+
+                card.innerHTML = `
+                    <div class="p-5 text-white relative animate-fade-in" style="background: linear-gradient(135deg, var(--color-primary), #FFA285);">
+                        <div class="absolute top-3 right-3 flex space-x-1.5 z-10">
+                            <button onclick="editTripTitle(event, '${trip.id}')" class="w-7 h-7 flex items-center justify-center bg-black/10 hover:bg-white/30 backdrop-blur-sm text-white rounded-full transition-all text-xs shadow-sm" title="修改 ✏️">
+                                <i class="fa-solid fa-pen text-[10px]"></i>
+                            </button>
+                            <button onclick="deleteTrip(event, '${trip.id}')" class="w-7 h-7 flex items-center justify-center bg-black/10 hover:bg-red-500/80 backdrop-blur-sm text-white rounded-full transition-all text-xs shadow-sm" title="刪除卡片 ❌">
+                                <i class="fa-solid fa-xmark text-[11px]"></i>
+                            </button>
+                        </div>
+
+                        <div class="text-[10px] tracking-widest font-bold opacity-80 uppercase">Boarding Pass</div>
+                        <div class="text-sm font-bold mt-0.5 pr-14">${trip.title}</div>
+                        <div class="flex justify-between items-center mt-4">
+                            <div>
+                                <div class="text-2xl font-black tracking-tight">${trip.fromCode || 'TPE'}</div>
+                            </div>
+                            <div class="text-center opacity-40 transform rotate-45"><i class="fa-solid fa-plane textxl text-xl"></i></div>
+                            <div>
+                                <div class="text-2xl font-black tracking-tight">${trip.toCode || 'NRT'}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 flex flex-col space-y-4 text-xs" style="background-color: var(--color-card-sub);">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <label class="text-[9px] text-stone-400 block font-medium">航班起飛時間 🛫</label>
+                                <input type="datetime-local" onclick="event.stopPropagation()" onchange="updateTripDateTime(event, '${trip.id}', 'dep')" value="${depDateTime}" class="w-full text-[10px] font-bold text-stone-700 bg-white border border-stone-200 rounded-lg p-2 focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] outline-none transition-all cursor-text shadow-sm hover:border-stone-300">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[9px] text-stone-400 block font-medium">航班到達時間 🛬</label>
+                                <input type="datetime-local" onclick="event.stopPropagation()" onchange="updateTripDateTime(event, '${trip.id}', 'arr')" value="${arrDateTime}" class="w-full text-[10px] font-bold text-stone-700 bg-white border border-stone-200 rounded-lg p-2 focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] outline-none transition-all cursor-text shadow-sm hover:border-stone-300">
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center pt-2.5 border-t border-stone-100">
+                            <div><span class="text-[9px] text-stone-400 block">航班編號</span><span class="font-bold text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded text-[10px]">${trip.flight}</span></div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            saveToStorage();
+        }
+
+        function saveNewTrip() {
+            const title = document.getElementById('modal-trip-title').value || "台北 ➔ 東京";
+            const start = document.getElementById('modal-trip-start').value || "2026-06-16";
+            const flight = document.getElementById('modal-trip-flight').value || "JX800";
+            const from = document.getElementById('modal-trip-from').value || "TPE";
+            const to = document.getElementById('modal-trip-to').value || "NRT";
+            const deptime = document.getElementById('modal-trip-deptime').value || "08:20";
+            const arrtime = document.getElementById('modal-trip-arrtime').value || "12:45";
+
+            appData.trips.push({
+                id: "trip-" + Date.now(), title: title, startDate: start, arrDate: start, flight: flight,
+                fromCode: from, toCode: to, depTime: deptime, arrTime: arrtime,
+                dailyItinerary: [ { day: 1, date: start, activities: [], mood: 'hyped' } ],
+                budget: { total: 40000, spent: 0 }, customBudgetExpenses: [], checklist: []
+            });
+            closeModal('trip-modal');
+            renderDashboard();
+        }
+
+        async function fetchTaiwanWeatherData() {
+            const weatherStringEl = document.getElementById('tw-weather-string');
+            try {
+                const mockWeatherFetch = () => new Promise(resolve => setTimeout(() => { resolve({ condition: "晴朗舒適", temperature: "28" }); }, 400));
+                const data = await mockWeatherFetch();
+                weatherStringEl.innerText = `台灣今日天候風貌：${data.condition} (${data.temperature}°C)`;
+            } catch (error) {
+                weatherStringEl.innerText = "台灣當地今日天氣：多雲轉晴 (26°C)";
+            }
+        }
+
+        function reindexItineraryDays(trip) {
+            trip.dailyItinerary.sort((a, b) => a.date.localeCompare(b.date));
+            trip.dailyItinerary.forEach((dayObj, index) => { dayObj.day = index + 1; });
+            saveToStorage();
+        }
+
+        function openManageDayModal(mode) {
+            const trip = appData.trips.find(t => t.id === activeTripId);
+            if(!trip) return;
+            document.getElementById('day-manage-mode').value = mode;
+            const titleEl = document.getElementById('day-manage-title');
+            const labelEl = document.getElementById('day-manage-label');
+            const dateInput = document.getElementById('day-manage-date');
+            if (mode === 'add') {
+                titleEl.innerText = "插入新的一天 📅"; labelEl.innerText = "選擇要插入的日期：";
+                const lastDayStr = trip.dailyItinerary[trip.dailyItinerary.length - 1].date;
+                let lastDate = new Date(lastDayStr); lastDate.setDate(lastDate.getDate() + 1);
+                dateInput.value = lastDate.toISOString().split('T')[0];
+            } else {
+                titleEl.innerText = "修改目前選定天數的日期 ✏️"; labelEl.innerText = "將當前 Day " + trip.dailyItinerary[activeDayIdx].day + " 改為以下日期：";
+                dateInput.value = trip.dailyItinerary[activeDayIdx].date;
+            }
+            openModal('day-manage-modal');
+        }
+
+        function executeDayManagement() {
+            const trip = appData.trips.find(t => t.id === activeTripId);
+            const mode = document.getElementById('day-manage-mode').value;
+            const selectedDate = document.getElementById('day-manage-date').value;
+            if(!selectedDate) return;
+            if (mode === 'add') {
+                if (trip.dailyItinerary.some(d => d.date === selectedDate)) { alert("該日期行程已存在！"); return; }
+                trip.dailyItinerary.push({ day: 0, date: selectedDate, activities: [], mood: 'hyped' });
+                reindexItineraryDays(trip);
+                activeDayIdx = trip.dailyItinerary.findIndex(d => d.date === selectedDate);
+            } else {
+                if (trip.dailyItinerary.some((d, i) => d.date === selectedDate && i !== activeDayIdx)) { alert("日期已被佔用！"); return; }
+                trip.dailyItinerary[activeDayIdx].date = selectedDate;
+                if(trip.dailyItinerary[activeDayIdx].activities) {
+                    trip.dailyItinerary[activeDayIdx].activities.forEach(act => act.date = selectedDate);
+                }
+                reindexItineraryDays(trip);
+                activeDayIdx = trip.dailyItinerary.findIndex(d => d.date === selectedDate);
+            }
+            closeModal('day-manage-modal'); 
+            renderPlanner();
+            renderMoodSelector();
+        }
+
+        function deleteCurrentDayShortcut() {
+            const trip = appData.trips.find(t => t.id === activeTripId);
+            if(!trip || trip.dailyItinerary.length <= 1) { alert("手帳剩下一天囉，留著它吧！"); return; }
+            if(confirm(`確定要完全刪除「Day ${trip.dailyItinerary[activeDayIdx].day}」？`)) {
+                trip.dailyItinerary.splice(activeDayIdx, 1);
+                reindexItineraryDays(trip);
+                if(activeDayIdx >= trip.dailyItinerary.length) activeDayIdx = trip.dailyItinerary.length - 1;
+                renderPlanner(); 
+                renderMoodSelector();
+                updateBudgetCalculations();
+            }
+        }
+
+        function renderPlanner() {
+            const trip = appData.trips.find(t => t.id === activeTripId);
+            if(!trip) return;
+            document.getElementById('planner-title').innerText = trip.title;
+            document.getElementById('day-counter-footer').innerText = `目前總計: ${trip.dailyItinerary.length} 天`;
+            const dayBox = document.getElementById('day-selector');
+            dayBox.innerHTML = "";
+            trip.dailyItinerary.forEach((dayData, idx) => {
+                const isSelected = idx === activeDayIdx;
+                const btn = document.createElement('button');
+                btn.className = `flex-shrink-0 py-2.5 px-4 rounded-xl border text-center md:text-left transition-all text-xs font-bold ${isSelected ? 'theme-bg-primary text-white border-transparent shadow-sm' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'}`;
+                btn.onclick = () => { activeDayIdx = idx; renderPlanner(); renderMoodSelector(); };
+                btn.innerHTML = `Day ${dayData.day} - ${dayData.date.substring(5)}`;
+                dayBox.appendChild(btn);
+            });
+            const currentDay = trip.dailyItinerary[activeDayIdx] || { date: trip.startDate, activities: [] };
+            const timeline = document.getElementById('timeline-container');
+            timeline.innerHTML = "";
+            if(!currentDay.activities || currentDay.activities.length === 0) {
+                timeline.innerHTML = `<p class="text-xs text-stone-400 py-4 pl-2">今天手帳還空空的，點擊右上方新增行程吧！✨</p>`; return;
+            }
+            currentDay.activities.forEach((act, aIdx) => {
+                const item = document.createElement('div');
+                item.className = "relative handbook-card p-3 flex justify-between items-center bg-stone-50/60 transition-colors shadow-sm border border-stone-100";
+                item.innerHTML = `
+                    <div class="absolute -left-[25px] w-2.5 h-2.5 rounded-full theme-bg-primary border-2 border-white"></div>
+                    <div class="flex flex-col space-y-1">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[9px] font-bold text-white px-1.5 py-0.5 rounded-md theme-bg-primary">${act.time}</span>
+                            <span class="text-xs font-bold text-stone-700">${act.location}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2.5">
+                        <span class="text-xs text-stone-600 font-bold">$${act.cost}</span>
+                        <button onclick="deleteActivity(${aIdx})" class="text-stone-300 hover:text-red-500 p-1"><i class="fa-solid fa-trash-can text-[10px]"></i></button>
+                    </div>
+                `;
+                timeline.appendChild(item);
+            });
+        }
+
+        function openActivityModal() {
+            const trip = appData.trips.find(t => t.id === activeTripId);
+            document.getElementById('act-time').value = "12:00"; document.getElementById('act-cost').value = "0";
+            document.getElementById('act-location').value = ""; document.getElementById('act-date').value = trip.dailyItinerary[activeDayIdx].date;
+            openModal('activity-modal');
+        }
+
+        function saveActivityLogic() {
+            const trip = appData.trips.find(t => t.id === activeTripId);
+            const time = document.getElementById('act-time').value;
+            const cost = Number(document.getElementById('act-cost').value) || 0;
+            const duration = document.getElementById('act-duration').value || "1";
+            const location = document.getElementById('act-location').value || "新探索景點";
+            const date = document.getElementById('act-date').value;
+            const category = document.getElementById('act-category').value;
+            if(!trip.dailyItinerary[activeDayIdx].activities) trip.dailyItinerary[activeDayIdx].activities = [];
+            trip.dailyItinerary[activeDayIdx].activities.push({ time, location, cost, duration, date, category });
+            trip.dailyItinerary[activeDayIdx].activities.sort((a,b) => a.time.localeCompare(b.time));
+            closeModal('activity-modal'); 
+            renderPlanner(); 
+            updateBudgetCalculations();
+        }
+
+        function deleteActivity(index) {
+            const trip = appData.trips.find(t => t.id === activeTripId);
+            trip.dailyItinerary[activeDayIdx].activities.splice(index, 1);
+            renderPlanner(); 
+            updateBudgetCalculations();
+        }
+
+        function handleTotalBudgetChange(inputEl) {
+            const trip = appData.trips.find(t => t.id === activeTripId);
+            if(!trip) return;
+            const newTotal = Number(inputEl.value);
+            trip.budget.total = newTotal >= 0 ? newTotal : 0;
+            calculateAndRenderBudgetMetrics(trip);
+            saveToStorage();
+        }
+
+        function updateBudgetCalculations() {
+            const trip = appData.trips.find(t => t.id === activeTripId);
+            if(!trip) return;
+            let totalSpent = 0;
+            trip.dailyItinerary.forEach(day => {
+                if(day.activities) day.activities.forEach(act => totalSpent += Number(act.cost));
+            });
+            if(trip.customBudgetExpenses) {
+                trip.customBudgetExpenses.forEach(item => totalSpent += Number(item.cost));
+            }
+            trip.budget.spent = totalSpent;
+            saveToStorage();
+            
+            checkAchievements();
+        }
+
+        function addCustomBudgetItem() {
+            const name = document.getElementById('budget-item-name').value.trim();
+            const cost = Number(document.getElementById('budget-item-cost').value) || 0;
+            const category = document.getElementById('budget-item-category').value;
+            const trip = appData.trips.find(t => t.id === activeTripId);
+            if(!name) { alert("請填寫支出項目描述名稱！"); return; }
+            if(cost <= 0) { alert("請填寫大於 0 的有效花費金額！"); return; }
+            if(!trip.customBudgetExpenses) trip.customBudgetExpenses = [];
+            trip.customBudgetExpenses.push({ name, cost, category });
+            document.getElementById('budget-item-name').value = "";
+            document.getElementById('budget-item-cost').value = "";
+            renderBudgetPage();
+        }
+
+        function deleteCustomBudgetItem(index) {
+            const trip = appData.trips.find(t => t.id === activeTripId);
+            if(trip && trip.customBudgetExpenses) {
+                trip.customBudgetExpenses.splice(index, 1);
+                renderBudgetPage();
+            }
+        }
+
+        function calculateAndRenderBudgetMetrics(trip) {
+            const total = trip.budget.total || 0;
+            const spent = trip.budget.spent || 0;
+            const remain = total - spent;
+            document.getElementById('budget-total-input').value = total;
+            document.getElementById('budget-spent').innerText = `$${spent.toLocaleString()}`;
+            document.getElementById('budget-remain').innerText = `$${remain.toLocaleString()}`;
+            const remainCard = document.getElementById('budget-remain-card');
+            const remainLabel = document.getElementById('budget-remain-label');
+            if (remain < 0) {
+                remainCard.className = "bg-red-50 p-4 rounded-xl border border-red-200 shadow-sm flex flex-col justify-between transition-colors duration-300";
+                remainLabel.innerText = "🚨 已嚴重赤字超支";
+                document.getElementById('budget-remain').className = "font-bold text-lg mt-2 text-red-600";
+            } else {
+                remainCard.className = "bg-white p-4 rounded-xl border border-stone-100 shadow-sm flex flex-col justify-between transition-colors duration-300";
+                remainLabel.innerText = "☕ 可用剩餘款";
+                document.getElementById('budget-remain').className = "font-bold text-lg mt-2 text-emerald-600";
+            }
+            let utilizationPercent = total > 0 ? Math.round((spent / total) * 100) : (spent > 0 ? 100 : 0);
+            document.getElementById('budget-percent-text').innerText = `${utilizationPercent}%`;
+            const barEl = document.getElementById('budget-percent-bar');
+            barEl.style.width = `${Math.min(utilizationPercent, 100)}%`;
+            if (utilizationPercent > 100) barEl.className = "h-full bg-red-400 transition-all duration-500 rounded-full";
+            else if (utilizationPercent > 80) barEl.className = "h-full bg-amber-400 transition-all duration-500 rounded-full";
+            else barEl.className = "h-full bg-emerald-400 transition-all duration-500 rounded-full";
+
+            checkAchievements();
+        }
+
+        function renderBudgetPage() {
+            updateBudgetCalculations();
+            const trip = appData.trips.find(t => t.id === activeTripId);
+            if(!trip) return;
+            calculateAndRenderBudgetMetrics(trip);
+            let categoryTotals = { Food: 0, Transport: 0, Accommodation: 0, Shopping: 0, Others: 0 };
+            trip.dailyItinerary.forEach(day => {
+                if(day.activities) day.activities.forEach(act => {
+                    const cat = act.category || "Others";
+                    if(categoryTotals[cat] !== undefined) categoryTotals[cat] += Number(act.cost);
+                });
+            });
+            if(trip.customBudgetExpenses) {
+                trip.customBudgetExpenses.forEach(item => {
+                    const cat = item.category || "Others";
+                    if(categoryTotals[cat] !== undefined) categoryTotals[cat] += Number(item.cost);
+                });
+            }
+            const catContainer = document.getElementById('budget-categories');
+            catContainer.innerHTML = `
+                <div class="flex justify-between border-b border-stone-100 pb-1 text-stone-500 font-bold"><span class="text-[10px]">預算支出類別明細</span><span>金額 (TWD)</span></div>
+                <div class="flex justify-between"><span>🍡 美食餐飲</span><span class="font-bold">NT$ ${categoryTotals.Food.toLocaleString()}</span></div>
+                <div class="flex justify-between"><span>🚇 交通運輸</span><span class="font-bold">NT$ ${categoryTotals.Transport.toLocaleString()}</span></div>
+                <div class="flex justify-between"><span>🏨 飯店住宿</span><span class="font-bold">NT$ ${categoryTotals.Accommodation.toLocaleString()}</span></div>
+                <div class="flex justify-between"><span>🛍️ 購物藥妝</span><span class="font-bold">NT$ ${categoryTotals.Shopping.toLocaleString()}</span></div>
+                <div class="flex justify-between"><span>🎈 其他支出</span><span class="font-bold">NT$ ${categoryTotals.Others.toLocaleString()}</span></div>
+            `;
+            const customListEl = document.getElementById('custom-expenses-list');
+            customListEl.innerHTML = "";
+            if(!trip.customBudgetExpenses || trip.customBudgetExpenses.length === 0) {
+                customListEl.innerHTML = `<p class="text-stone-300 text-[11px] text-center py-2">目前尚無獨立記帳項目</p>`;
+            } else {
+                trip.customBudgetExpenses.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = "flex justify-between items-center bg-stone-50 p-2 rounded-xl border border-stone-100 hover:bg-red-50 hover:border-red-100 group transition-all cursor-pointer";
+                    div.onclick = () => deleteCustomBudgetItem(index);
+                    div.innerHTML = `
+                        <span class="text-stone-600 font-medium group-hover:text-red-600"><i class="fa-solid fa-receipt text-stone-400 mr-1 text-[10px] group-hover:hidden"></i><i class="fa-solid fa-trash-can text-red-500 mr-1 text-[10px] hidden group-hover:inline"></i>${item.name} <b class="text-[9px] text-stone-400 font-normal">(${getCategoryName(item.category)})</b></span>
+                        <span class="font-bold text-stone-700 group-hover:text-red-600">$${item.cost}</span>
+                    `;
+                    customListEl.appendChild(div);
+                });
+            }
+            if (budgetChartInstance) budgetChartInstance.destroy();
+            const ctx = document.getElementById('budgetChart').getContext('2d');
+            const hasData = Object.values(categoryTotals).some(v => v > 0);
+            const chartData = hasData ? Object.values(categoryTotals) : [0, 0, 0, 0, 1];
+            budgetChartInstance = new Chart(ctx, {
+                type: 'pie',
+                data: { labels: ['美食', '交通', '住宿', '購物', '其他'], datasets: [{ data: chartData, backgroundColor: ['#FFB19A', '#CBE2B5', '#A9D2DE', '#E8C5E4', '#EBEBEB'], borderColor: '#4A3E3D', borderWidth: 1.5 }] },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function getCategoryName(key) {
+            const map = { Food: "美食", Transport: "交通", Accommodation: "住宿", Shopping: "購物", Others: "其他" };
+            return map[key] || "其他";
+        }
+
+
+        // ==========================================
+        // 🛠️ 像素藝術模組核心邏輯驅動引擎
+        // ==========================================
+
+        function initPixelModules() {
+            renderStickerDrawer();
+            renderAchievementsWidget();
+        }
+
+        function toggleStickerDrawer() {
+            const content = document.getElementById('sticker-drawer-content');
+            const caret = document.getElementById('sticker-drawer-caret');
+            if(content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                caret.className = "fa-solid fa-chevron-up text-xs text-stone-400";
+            } else {
+                content.classList.add('hidden');
+                caret.className = "fa-solid fa-chevron-down text-xs text-stone-400";
+            }
+        }
+
+        // 🧸 按特定主題四分類精準渲染 8位元高質感貼紙
+        function renderStickerDrawer() {
+            const mediaPalette = document.getElementById('palette-media');
+            const dessertsPalette = document.getElementById('palette-desserts');
+            const cafePalette = document.getElementById('palette-cafe');
+            const popPalette = document.getElementById('palette-pop');
+
+            if(!mediaPalette || !dessertsPalette || !cafePalette || !popPalette) return;
+
+            // 定義貼紙核心詮釋結構與鎖定狀態
+            const stickerCollections = {
+                media: [
+                    { id: 'floppy', name: '磁碟片' },
+                    { id: 'cassette', name: '卡帶' },
+                    { id: 'cd', name: 'CD光碟' },
+                    { id: 'sdcard', name: 'SD卡' }
+                ],
+                desserts: [
+                    { id: 'parfait', name: '草莓聖代' },
+                    { id: 'pudding', name: '焦糖布丁' },
+                    { id: 'donut', name: '甜甜圈' },
+                    { id: 'rollcake', name: '蛋糕捲' }
+                ],
+                cafe: [
+                    { id: 'bubbletea', name: '珍珠奶茶' },
+                    { id: 'burger', name: '美味漢堡' },
+                    { id: 'pizza', name: '披薩網格' },
+                    { id: 'sushi', name: '鮭魚壽司' }
+                ],
+                pop: [
+                    { id: 'princess', name: 'Chibi公主' },
+                    { id: 'mysterybox', name: '問號方塊' },
+                    { id: 'shark', name: '像素鯊魚' },
+                    // 成就解鎖彩蛋貼紙
+                    { id: 'badge_tycoon', name: '精明財神', reqAchievement: 'tycoon' },
+                    { id: 'badge_unstoppable', name: '步履不停', reqAchievement: 'unstoppable' }
+                ]
+            };
+
+            const populatePalette = (container, list) => {
+                container.innerHTML = "";
+                list.forEach(sticker => {
+                    let isLocked = false;
+                    if (sticker.reqAchievement && (!appData.unlockedAchievements || !appData.unlockedAchievements.includes(sticker.reqAchievement))) {
+                        isLocked = true;
+                    }
+
+                    const node = document.createElement('button');
+                    node.className = `flex flex-col items-center justify-center p-2 rounded-xl border border-stone-100 bg-stone-50/50 hover:bg-stone-100 transition-all ${isLocked ? 'opacity-25 grayscale cursor-not-allowed' : 'cursor-pointer active:scale-95'}`;
+                    
+                    if(!isLocked) {
+                        node.onclick = () => instantiateStickerOnActivePage(sticker.id);
+                    } else {
+                        node.title = "解鎖工具箱中對應的復古成就即可獲得此隱藏貼紙！";
+                    }
+
+                    node.innerHTML = `
+                        <div class="w-8 h-8 flex items-center justify-center">${PIXEL_SVG_ASSETS[sticker.id]}</div>
+                        <span class="text-[9px] text-stone-500 mt-1 font-medium truncate w-full text-center">${sticker.name}</span>
+                    `;
+                    container.appendChild(node);
+                });
+            };
+
+            populatePalette(mediaPalette, stickerCollections.media);
+            populatePalette(dessertsPalette, stickerCollections.desserts);
+            populatePalette(cafePalette, stickerCollections.cafe);
+            populatePalette(popPalette, stickerCollections.pop);
+        }
+
+        function instantiateStickerOnActivePage(type) {
+            const randomTop = Math.floor(Math.random() * 55) + 15; 
+            const randomLeft = Math.floor(Math.random() * 60) + 15; 
+            const rotationOptions = [3, -6, 12, -4, 6, -12];
+            const randomRotate = rotationOptions[Math.floor(Math.random() * rotationOptions.length)];
+
+            const stickerObject = {
+                uid: "sticker-" + Date.now() + "-" + Math.random().toString(36).substr(2, 5),
+                type: type,
+                page: activeTab,
+                top: randomTop,
+                left: randomLeft,
+                rotate: randomRotate
+            };
+
+            appData.placedStickers.push(stickerObject);
+            saveToStorage();
+            renderPlacedStickers();
+        }
+
+        function renderPlacedStickers() {
+            document.querySelectorAll('.runtime-sticker').forEach(el => el.remove());
+
+            const activeViewContainer = document.getElementById(`page-${activeTab}`);
+            if(!activeViewContainer) return;
+
+            const filtered = appData.placedStickers.filter(s => s.page === activeTab);
+            filtered.forEach(s => {
+                const wrapper = document.createElement('div');
+                wrapper.className = "absolute runtime-sticker z-40 select-none pointer-events-auto";
+                wrapper.style.top = `${s.top}%`;
+                wrapper.style.left = `${s.left}%`;
+                wrapper.style.transform = `rotate(${s.rotate}deg)`;
+                wrapper.style.cursor = "pointer";
+                wrapper.title = "雙擊兩下可撕除貼紙";
+                
+                wrapper.ondblclick = (e) => {
+                    e.stopPropagation();
+                    removeSticker(s.uid);
+                };
+
+                wrapper.innerHTML = PIXEL_SVG_ASSETS[s.type];
+                activeViewContainer.appendChild(wrapper);
+            });
+        }
+
+        function removeSticker(uid) {
+            appData.placedStickers = appData.placedStickers.filter(s => s.uid !== uid);
+            saveToStorage();
+            renderPlacedStickers();
+        }
+
+        // 👾 [模組 2 邏輯]: 復古成就監測系統
+        function checkAchievements() {
+            const trip = appData.trips.find(t => t.id === activeTripId);
+            if(!trip) return;
+
+            let stateChanged = false;
+            if(!appData.unlockedAchievements) appData.unlockedAchievements = [];
+
+            // 條件 A: 當前預算佔用率保持在 80% 以下
+            const total = trip.budget.total || 0;
+            const spent = trip.budget.spent || 0;
+            const uPercent = total > 0 ? (spent / total) * 100 : 0;
+
+            if(total > 0 && uPercent < 80) {
+                if(!appData.unlockedAchievements.includes('tycoon')) {
+                    appData.unlockedAchievements.push('tycoon');
+                    stateChanged = true;
+                }
+            } else {
+                if(appData.unlockedAchievements.includes('tycoon')) {
+                    appData.unlockedAchievements = appData.unlockedAchievements.filter(a => a !== 'tycoon');
+                    stateChanged = true;
+                }
+            }
+
+            // 條件 B: 備忘清單內所有項目皆被勾選完成
+            const hasItems = trip.checklist && trip.checklist.length > 0;
+            const isAllDone = hasItems && trip.checklist.every(item => item.done);
+
+            if(isAllDone) {
+                if(!appData.unlockedAchievements.includes('unstoppable')) {
+                    appData.unlockedAchievements.push('unstoppable');
+                    stateChanged = true;
+                }
+            } else {
+                if(appData.unlockedAchievements.includes('unstoppable')) {
+                    appData.unlockedAchievements = appData.unlockedAchievements.filter(a => a !== 'unstoppable');
+                    stateChanged = true;
+                }
+            }
+
+            if(stateChanged) {
+                saveToStorage();
+                renderStickerDrawer();
+            }
+            renderAchievementsWidget();
+        }
+
+        function renderAchievementsWidget() {
+            const wrapper = document.getElementById('achievements-container');
+            if(!wrapper) return;
+
+            const isTycoon = appData.unlockedAchievements.includes('tycoon');
+            const isUnstoppable = appData.unlockedAchievements.includes('unstoppable');
+
+            wrapper.innerHTML = `
+                <div class="flex items-center space-x-3 p-3 rounded-xl border ${isTycoon ? 'border-emerald-200 bg-emerald-50/40' : 'border-stone-100 bg-stone-50/50'}">
+                    <div class="w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-sm border border-stone-200/60 ${isTycoon ? '' : 'grayscale'}">
+                        ${PIXEL_SVG_ASSETS.badge_tycoon}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-bold ${isTycoon ? 'text-emerald-900' : 'text-stone-500'}">精明小財神 (Prudent Tycoon)</p>
+                        <p class="text-[10px] text-stone-400">總體預算利用率維持在 80% 以下</p>
+                    </div>
+                    <div>
+                        <span class="text-[9px] font-mono px-1.5 py-0.5 rounded-full ${isTycoon ? 'bg-emerald-200 text-emerald-800' : 'bg-stone-200 text-stone-400'}">${isTycoon ? '已達成' : '未解鎖'}</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3 p-3 rounded-xl border ${isUnstoppable ? 'border-pink-200 bg-pink-50/40 animate-pixel-flash' : 'border-stone-100 bg-stone-50/50'}">
+                    <div class="w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-sm border border-stone-200/60 ${isUnstoppable ? '' : 'grayscale'}">
+                        ${PIXEL_SVG_ASSETS.badge_unstoppable}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-bold ${isUnstoppable ? 'text-pink-900' : 'text-stone-500'}">像素公主步履不停</p>
+                        <p class="text-[10px] text-stone-400">完成打包備忘錄內全部勾選清單項目</p>
+                    </div>
+                    <div>
+                        <span class="text-[9px] font-mono px-1.5 py-0.5 rounded-full ${isUnstoppable ? 'bg-pink-200 text-pink-800' : 'bg-stone-200 text-stone-400'}">${isUnstoppable ? '已解鎖' : '未解鎖'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 🌤️ [模組 3 邏輯]: 每日心情狀態切換引擎
+        function renderMoodSelector() {
+            const box = document.getElementById('mood-selector-container');
+            if(!box) return;
+
+            const trip = appData.trips.find(t => t.id === activeTripId);
+            if(!trip || !trip.dailyItinerary[activeDayIdx]) return;
+
+            const currentDayObj = trip.dailyItinerary[activeDayIdx];
+            const currentSelectedMood = currentDayObj.mood || null;
+
+            box.innerHTML = "";
+            Object.keys(MOOD_AVATARS).forEach(key => {
+                const target = MOOD_AVATARS[key];
+                const isActive = currentSelectedMood === key;
+                
+                const btn = document.createElement('button');
+                btn.className = `flex items-center space-x-1 p-1 rounded-lg border text-[9px] font-bold transition-all ${isActive ? 'border-[var(--color-primary)] bg-white ring-1 ring-[var(--color-primary)]' : 'border-stone-200 bg-stone-50/50 hover:bg-white'}`;
+                
+                btn.onclick = () => {
+                    currentDayObj.mood = key;
+                    saveToStorage();
+                    renderMoodSelector();
+                };
+
+                btn.innerHTML = `
+                    <div class="w-5 h-5 flex items-center justify-center">${target.svg}</div>
+                    <span class="text-stone-600">${target.name}</span>
+                `;
+                box.appendChild(btn);
+            });
+        }
+    </script>
+</body>
+</html>
+
+
